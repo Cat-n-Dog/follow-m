@@ -1,0 +1,86 @@
+---
+title: "Restaurant Revenue Prediction"
+author: "Benqing Shen"
+date: "Saturday, March 28, 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary(cars)
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r, echo=FALSE}
+#library(checkpoint)
+# checkpoint(snapshotDate = '2015-03-25')
+```
+
+
+```{r}
+train_df <- read.csv(file = 'train.csv')
+```
+
+Open.Date is parsed as factors, which might not be what we exactly are looking after.
+
+```{r, echo=FALSE}
+library('lubridate')
+library('dplyr')
+```
+
+```{r}
+train_df$Open.Date <- lubridate::mdy(train_df$Open.Date)
+```
+
+```{r}
+mdl <- lm(formula = revenue ~ . - Id - Open.Date - City.Group - Type, data = train_df)
+summary(mdl)
+sqrt( mean( residuals(mdl) ^ 2 ) )
+```
+
+```{r}
+train_df <- train_df %>%
+  dplyr::mutate(Open.Year = year(Open.Date), Open.Month = month(Open.Date),
+                City2 = ifelse(test = City.Group == 'Big Cities', yes = City, no = 0))
+train_df$City2 <- as.factor(train_df$City2)
+train_df$Open.Year <- as.factor(train_df$Open.Year)
+train_df$Open.Month <- as.factor(train_df$Open.Month)
+#train_df %>% group_by(City.Group) %>% summarise(count = n())
+train_tbl_df <- tbl_df(train_df)
+```
+
+```{r}
+mdl <- lm(formula = revenue ~ . - Id - Open.Date - City.Group - City - Type - Open.Month, data = train_df)
+summary(mdl)
+sqrt( mean( residuals(mdl) ^ 2 ) )
+predict.lm()
+```
+
+```{r}
+test_df <- read.csv(file = 'test.csv')
+test_df$Open.Date <- lubridate::mdy(test_df$Open.Date)
+test_df <- test_df %>%
+  dplyr::mutate(Open.Year = year(Open.Date), Open.Month = month(Open.Date),
+                City2 = ifelse(test = City.Group == 'Big Cities', yes = City, no = 0))
+test_df$City2 <- as.factor(test_df$City2)
+test_df$Open.Year <- as.factor(test_df$Open.Year)
+test_df$Open.Month <- as.factor(test_df$Open.Month)
+#train_df %>% group_by(City.Group) %>% summarise(count = n())
+test_tbl_df <- tbl_df(test_df)
+```
+
+```{r}
+pred <- predict.lm(mdl, newdata = test_df[-c('City')])
+```
+
+

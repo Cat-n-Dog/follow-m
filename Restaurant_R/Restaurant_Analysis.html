@@ -82,6 +82,20 @@ img {
 <p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
 <pre class="r"><code>train_df &lt;- read.csv(file = 'train.csv')</code></pre>
 <p>Open.Date is parsed as factors, which might not be what we exactly are looking after.</p>
+<pre><code>## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:lubridate':
+## 
+##     intersect, setdiff, union
+## 
+## The following object is masked from 'package:stats':
+## 
+##     filter
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union</code></pre>
 <pre class="r"><code>train_df$Open.Date &lt;- lubridate::mdy(train_df$Open.Date)</code></pre>
 <pre class="r"><code>mdl &lt;- lm(formula = revenue ~ . - Id - Open.Date - City.Group - Type, data = train_df)
 summary(mdl)</code></pre>
@@ -175,6 +189,106 @@ summary(mdl)</code></pre>
 ## F-statistic: 0.9417 on 70 and 66 DF,  p-value: 0.5984</code></pre>
 <pre class="r"><code>sqrt( mean( residuals(mdl) ^ 2 ) )</code></pre>
 <pre><code>## [1] 1815460</code></pre>
+<pre class="r"><code>train_df &lt;- train_df %&gt;%
+  dplyr::mutate(Open.Year = year(Open.Date), Open.Month = month(Open.Date),
+                City2 = ifelse(test = City.Group == 'Big Cities', yes = City, no = 0))
+train_df$City2 &lt;- as.factor(train_df$City2)
+train_df$Open.Year &lt;- as.factor(train_df$Open.Year)
+train_df$Open.Month &lt;- as.factor(train_df$Open.Month)
+#train_df %&gt;% group_by(City.Group) %&gt;% summarise(count = n())
+train_tbl_df &lt;- tbl_df(train_df)</code></pre>
+<pre class="r"><code>train_tbl_df_mdl &lt;- train_tbl_df %&gt;% dplyr::select(P1:Open.Year, City2)
+mdl &lt;- lm(formula = revenue ~ ., data = train_tbl_df_mdl)
+summary(mdl)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = revenue ~ ., data = train_tbl_df_mdl)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -6045151 -1042952  -211722   829390  6791796 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(&gt;|t|)  
+## (Intercept)    5125336.8  4892627.4   1.048   0.2980  
+## P1              195392.0   351819.5   0.555   0.5802  
+## P2             -156457.6   375862.3  -0.416   0.6783  
+## P3             -107965.7   413177.5  -0.261   0.7945  
+## P4              240179.6   586448.7   0.410   0.6832  
+## P5              -61728.1   383320.3  -0.161   0.8725  
+## P6              136703.0   273056.0   0.501   0.6180  
+## P7              226509.3   243356.1   0.931   0.3548  
+## P8             -405107.3   575585.8  -0.704   0.4836  
+## P9              300808.3  1152680.3   0.261   0.7948  
+## P10            -331156.6  1603256.9  -0.207   0.8369  
+## P11              36184.9   301695.8   0.120   0.9048  
+## P12               -827.2   745342.3  -0.001   0.9991  
+## P13            -194673.4  1545041.8  -0.126   0.9000  
+## P14            -188334.6   436395.2  -0.432   0.6672  
+## P15            -432306.2   508658.3  -0.850   0.3979  
+## P16            -203857.6   564569.6  -0.361   0.7190  
+## P17             334288.2   398022.8   0.840   0.4035  
+## P18             176609.9   403098.8   0.438   0.6625  
+## P19             -92383.3   136168.5  -0.678   0.4994  
+## P20            -297965.6   177074.0  -1.683   0.0963 .
+## P21             112264.1   254930.6   0.440   0.6609  
+## P22            -150158.4   256503.4  -0.585   0.5599  
+## P23             179662.2   131419.9   1.367   0.1754  
+## P24             200812.5   541814.6   0.371   0.7119  
+## P25             852414.8   573675.4   1.486   0.1412  
+## P26            -998583.6   572063.7  -1.746   0.0847 .
+## P27             -73101.3   223749.8  -0.327   0.7447  
+## P28             424404.6   295511.9   1.436   0.1549  
+## P29            -111544.2   325912.7  -0.342   0.7331  
+## P30             -69064.5   168929.4  -0.409   0.6838  
+## P31             215529.8   269211.4   0.801   0.4257  
+## P32            -300327.7   250502.8  -1.199   0.2341  
+## P33             -66823.0   476358.5  -0.140   0.8888  
+## P34             120171.1   380220.3   0.316   0.7528  
+## P35               6482.3   407786.7   0.016   0.9874  
+## P36             396504.0   714663.0   0.555   0.5806  
+## P37             138740.0   448892.3   0.309   0.7581  
+## Open.Year1997 -1470611.5  8171299.5  -0.180   0.8576  
+## Open.Year1998  -664041.9  3332239.6  -0.199   0.8426  
+## Open.Year1999  2250412.3  3032541.7   0.742   0.4602  
+## Open.Year2000  8167539.0  3563189.9   2.292   0.0245 *
+## Open.Year2002  -191124.7  3546317.2  -0.054   0.9572  
+## Open.Year2004  -906087.7  3320636.8  -0.273   0.7857  
+## Open.Year2005  2322494.9  3273936.2   0.709   0.4801  
+## Open.Year2006   201995.6  3041580.3   0.066   0.9472  
+## Open.Year2007  1448046.5  3057882.4   0.474   0.6371  
+## Open.Year2008  1140504.5  2934788.7   0.389   0.6986  
+## Open.Year2009  -114564.9  2862582.2  -0.040   0.9682  
+## Open.Year2010   178290.7  2921398.5   0.061   0.9515  
+## Open.Year2011  -133003.4  2957720.6  -0.045   0.9642  
+## Open.Year2012   158692.8  2924136.3   0.054   0.9569  
+## Open.Year2013 -1250102.8  2900366.2  -0.431   0.6676  
+## Open.Year2014 -2419888.7  3332412.7  -0.726   0.4699  
+## City21          965609.0   750901.5   1.286   0.2022  
+## City22         1859798.6  1085801.3   1.713   0.0906 .
+## City26        -1246205.9   799257.9  -1.559   0.1229  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2206000 on 80 degrees of freedom
+## Multiple R-squared:  0.5688, Adjusted R-squared:  0.2669 
+## F-statistic: 1.884 on 56 and 80 DF,  p-value: 0.004627</code></pre>
+<pre class="r"><code>sqrt( mean( residuals(mdl) ^ 2 ) )</code></pre>
+<pre><code>## [1] 1685506</code></pre>
+<pre class="r"><code>test_df &lt;- read.csv(file = 'test.csv')
+test_df$Open.Date &lt;- lubridate::mdy(test_df$Open.Date)
+test_df &lt;- test_df %&gt;%
+  dplyr::mutate(Open.Year = year(Open.Date), Open.Month = month(Open.Date),
+                City2 = ifelse(test = City.Group == 'Big Cities', yes = City, no = 0))
+test_df$City2 &lt;- as.factor(test_df$City2)
+test_df$Open.Year &lt;- as.factor(test_df$Open.Year)
+test_df$Open.Month &lt;- as.factor(test_df$Open.Month)
+#train_df %&gt;% group_by(City.Group) %&gt;% summarise(count = n())
+test_tbl_df &lt;- tbl_df(test_df)
+
+test_tbl_df_pred &lt;- test_tbl_df %&gt;% dplyr::select(P1:Open.Year, City2)</code></pre>
+<p>In the test set there are Open.year = 1995, 2001, 2003 that weren’t included in training set.</p>
+<pre class="r"><code>#pred &lt;- predict.lm(mdl, newdata = test_tbl_df)</code></pre>
 
 
 </div>

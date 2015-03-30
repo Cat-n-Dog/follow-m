@@ -26,6 +26,11 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 # checkpoint(snapshotDate = '2015-03-25')
 ```
 
+```{r, echo=FALSE}
+library('lubridate')
+library('dplyr')
+library('glmnet')
+```
 
 ```{r}
 train_df <- read.csv(file = 'train.csv')
@@ -33,45 +38,49 @@ train_df <- read.csv(file = 'train.csv')
 
 Open.Date is parsed as factors, which might not be what we exactly are looking after.
 
-```{r, echo=FALSE}
-library('lubridate')
-library('dplyr')
-```
-
 ```{r}
 train_df$Open.Date <- lubridate::mdy(train_df$Open.Date)
 ```
 
 ```{r}
-mdl <- lm(formula = revenue ~ . - Id - Open.Date - City.Group - Type, data = train_df)
-summary(mdl)
-sqrt( mean( residuals(mdl) ^ 2 ) )
+# mdl <- lm(formula = revenue ~ . - Id - Open.Date - City.Group - Type, data = train_df)
+# summary(mdl)
+# sqrt( mean( residuals(mdl) ^ 2 ) )
 ```
 
 ```{r}
 train_df <- train_df %>%
   dplyr::mutate(Open.Year = year(Open.Date), Open.Month = month(Open.Date),
-                City2 = ifelse(test = City.Group == 'Big Cities', yes = 1, no = 0))
+                City2 = ifelse(test = City.Group == 'Big Cities', yes = as.character(City), no = 0))
 train_df$City2 <- as.factor(train_df$City2)
 train_df$Open.Year <- as.factor(train_df$Open.Year)
 train_df$Open.Month <- as.factor(train_df$Open.Month)
 #train_df %>% group_by(City.Group) %>% summarise(count = n())
 train_tbl_df <- tbl_df(train_df)
+train_tbl_df <- train_tbl_df %>%
+  filter(Id != 16)
 ```
 
 ```{r}
 train_tbl_df_mdl <- train_tbl_df %>% dplyr::select(Id, P1:Open.Year, City2)
 mdl <- lm(formula = revenue ~ . - Id, data = train_tbl_df_mdl)
 summary(mdl)
+residuals(mdl) %>%
+  hist(breaks = 25)
 sqrt( mean( residuals(mdl) ^ 2 ) )
 ```
+
+```{r}
+glmnet(x = select(train_df, P1:Open.Year, City2)), y = train_df$revenue)
+```
+
 
 ```{r}
 test_df <- read.csv(file = 'test.csv')
 test_df$Open.Date <- lubridate::mdy(test_df$Open.Date)
 test_df <- test_df %>%
   dplyr::mutate(Open.Year = year(Open.Date), Open.Month = month(Open.Date),
-                City2 = ifelse(test = City.Group == 'Big Cities', yes = 1, no = 0))
+                City2 = ifelse(test = City.Group == 'Big Cities', yes = as.character(City), no = 0))
 test_df$City2 <- as.factor(test_df$City2)
 test_df$Open.Year <- as.factor(test_df$Open.Year)
 test_df$Open.Month <- as.factor(test_df$Open.Month)
@@ -109,6 +118,8 @@ test_tbl_df_pred_year_fixed <- rbind(good, miss)
 
 ```{r}
 pred <- predict.lm(mdl, newdata = test_tbl_df_pred_year_fixed)
+submission <- data.frame(Id = 0:99999, Prediction=pred)
+write.csv(submission, file='submission.csv', row.names=FALSE, quote=FALSE)
 ```
 
 

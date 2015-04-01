@@ -1,0 +1,45 @@
+---
+title: "Train Data Analysis"
+author: "Benqing Shen"
+date: "Sunday, March 29, 2015"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggvis)
+```
+
+```{r}
+train_df <- read.csv(file = 'train.csv')
+train_tbl <- tbl_df(train_df)
+```
+
+```{r}
+train_df_by_city.group <-
+  train_df %>%
+  dplyr::group_by(City.Group, City)
+
+train_city_counts <-
+  train_df_by_city.group%>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+```
+
+```{r}
+head(train_city_counts, n = 20)
+```
+
+1  Big Cities   Ä°stanbul 34087
+2  Big Cities      Ankara  8720
+3  Big Cities      Ä°zmir  6465
+Bursa, Antalya, Adana, DiyarbakÄ±r, TekirdaÄŸ
+
+```{r}
+train_city_counts %>%
+  ggvis(~City, ~count) %>%
+  layer_points() %>%
+  add_axis("x", properties=axis_props(labels=list(angle=90)))
+  #axis_props(labels=list(angle=90))
+```

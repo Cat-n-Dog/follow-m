@@ -1,0 +1,42 @@
+---
+title: "Test Data Analysis"
+author: "Benqing Shen"
+date: "Sunday, March 29, 2015"
+output: html_document
+---
+
+```{r, echo=FALSE}
+library(dplyr)
+library(ggvis)
+```
+
+
+```{r}
+test_df <- read.csv(file = 'test.csv')
+test_tbl <- tbl_df(test_df)
+```
+
+```{r}
+test_df_by_city.group <-
+  test_df %>%
+  dplyr::group_by(City.Group, City)
+
+test_city_counts <-
+  test_df_by_city.group%>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+```
+
+```{r}
+head(test_city_counts, n = 20)
+```
+
+```{r}
+test_city_counts %>%
+  ggvis(~City, ~count) %>%
+  layer_points() %>%
+  add_axis("x", properties=axis_props(labels=list(angle=90)))
+  #axis_props(labels=list(angle=90))
+```
+

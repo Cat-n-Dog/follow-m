@@ -62,8 +62,8 @@ train_tbl_df <- train_tbl_df %>%
 ```
 
 ```{r}
-train_tbl_df_mdl <- train_tbl_df %>% dplyr::select(Id, P1:Open.Year, City2)
-mdl <- lm(formula = revenue ~ . - Id, data = train_tbl_df_mdl)
+train_tbl_df_mdl <- train_tbl_df %>% dplyr::select(Id, Open.Year, City2, revenue)
+mdl <- lm(formula = revenue ~ . - Id - Open.Year, data = train_tbl_df_mdl)
 summary(mdl)
 residuals(mdl) %>%
   hist(breaks = 25)

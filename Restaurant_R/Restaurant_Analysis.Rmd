@@ -57,9 +57,17 @@ train_df$Open.Year <- as.factor(train_df$Open.Year)
 train_df$Open.Month <- as.factor(train_df$Open.Month)
 #train_df %>% group_by(City.Group) %>% summarise(count = n())
 train_tbl_df <- tbl_df(train_df)
-train_tbl_df <- train_tbl_df %>%
-  filter(Id != 16)
+# train_tbl_df <- train_tbl_df %>% filter(Id != 16)
 ```
+
+Make some plots here.
+```{r}
+library(ggplot2)
+ggplot(train_tbl_df, aes(x=Open.Date , y=revenue)) + geom_point(aes(color=City2, shape=City2), size=3.5) + theme_minimal()
+ggplot(train_tbl_df, aes(x=P1, y=revenue)) + geom_point(aes(color=City2, shape=City2), size=3.5) + theme_minimal()
+ggplot(filter(train_tbl_df, City2 != '0'), aes(x=P1, y=revenue)) + geom_point(aes(color=City2, shape=City2), size=3.5) + theme_minimal()
+```
+
 
 ```{r}
 train_tbl_df_mdl <- train_tbl_df %>% dplyr::select(Id, Open.Year, City2, revenue)

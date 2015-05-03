@@ -1,11 +1,10 @@
 library('ggplot2')
 library('lubridate')
 library('dplyr')
-library('glmnet')
 library('tree')
 library('randomForest')
 library('gbm')
-
+library('caret')
 
 train_df <- read.csv(file = 'train.csv')
 train_df$Open.Date <- lubridate::mdy(train_df$Open.Date)
@@ -26,34 +25,21 @@ train_df_model_1 <- train_df_wo_3_outliers %>%
 train_df_model_2 <- train_df_wo_3_outliers %>%
   select(-(Id:Type))
 
-
-# train_df_model_3 <- train_df_wo_3_outliers %>%
-#   select(-(Id:Type, ))
+fitControl <- trainControl(method = "repeatedcv",number = 5,repeats = 5)
+caret.fit <- train(revenue ~ ., data = train_df_model_1, subset = train,
+                 method = "cubist", trControl = fitControl)
 
 y.test.train_df <- train_df_wo_3_outliers[-train, 'revenue']
-
-rf_model_in_sample <- randomForest(revenue ~ ., data=train_df_model_1, importance = TRUE,
-                                   mtry = 4, subset = train)
-yhat_in_sample <- predict(rf_model_in_sample, newdata = train_df_model_1[-train,])
-sqrt(mean((yhat_in_sample - y.test.train_df)^2))
-
-boost_model_in_sample <- gbm(revenue ~ ., data=train_df_model_1[train,],
-                             distribution = 'gaussian', n.trees =5000 ,
-                             interaction.depth =4, shrinkage=0.001)
-yhat_in_sample <- predict(boost_model_in_sample, newdata = train_df_model_1[-train,], n.trees=5000)
+yhat_in_sample <- predict(caret.fit, newdata = train_df_model_1[-train,])
 sqrt(mean((yhat_in_sample - y.test.train_df)^2))
 
 
-rf_model_1 <- randomForest(revenue ~ ., data=train_df_model_1, importance = TRUE, mtry = 4)
-rf_model_2 <- randomForest(revenue ~ ., data=train_df_model_2, importance = TRUE, mtry = 4)
 
-boost_model_1 <- gbm(revenue ~ ., data=train_df_model_1,
-                     distribution = 'gaussian', n.trees =5000,
-                     interaction.depth =4, shrinkage=0.001)
-boost_model_2 <- gbm(revenue ~ ., data=train_df_model_2,
-                     distribution = 'gaussian', n.trees =5000,
-                     interaction.depth =4, shrinkage=0.001)
 
+caret.fit1 <- train(revenue ~ ., data = train_df_model_1,
+                   method = "cubist", trControl = fitControl)
+caret.fit2 <- train(revenue ~ ., data = train_df_model_2,
+                    method = "cubist", trControl = fitControl)
 
 
 test_df2 <- read.csv('test_fixed_year.csv')
@@ -67,8 +53,7 @@ test_df2$City2 <- as.factor(test_df2$City2)
 test_df_model_1 <- test_df2 %>% filter(Type!='MB')
 test_df_model_1$Type <- droplevels(test_df_model_1$Type)
 
-submission_model_1 <- predict(rf_model_1, newdata = select(test_df_model_1, -(Id:City.Group)))
-submission_model_1 <- predict(boost_model_1, newdata = select(test_df_model_1, -(Id:City.Group)), n.trees=5000)
+submission_model_1 <- predict(caret.fit1, newdata = select(test_df_model_1, -(Id:City.Group)))
 
 names(submission_model_1) <- test_df_model_1$Id
 submission_model_1_df <- data.frame(submission_model_1, row.names = names(submission_model_1))
@@ -76,13 +61,12 @@ colnames(submission_model_1_df) <- 'Prediction'
 
 test_df_model_2 <- test_df2 %>% filter(Type=='MB')
 
-submission_model_2 <- predict(rf_model_2, newdata = select(test_df_model_2, -(Id:Type)))
-submission_model_2 <- predict(boost_model_2, newdata = select(test_df_model_2, -(Id:Type)), n.trees=5000)
+submission_model_2 <- predict(caret.fit2, newdata = select(test_df_model_2, -(Id:Type)))
 
 names(submission_model_2) <- test_df_model_2$Id
 submission_model_2_df <- data.frame(submission_model_2, row.names = names(submission_model_2))
 colnames(submission_model_2_df) <- 'Prediction'
 
 submission_df <- rbind(submission_model_1_df, submission_model_2_df)
-write.csv(submission_df, file='submission_rf_mtr9.csv', row.names=TRUE, quote=FALSE)
-write.csv(submission_df, file='submission_boost.csv', row.names=TRUE, quote=FALSE)
+
+write.csv(submission_df, file='submission_cubist.csv', row.names=TRUE, quote=FALSE)
